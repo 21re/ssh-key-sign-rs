@@ -1,0 +1,15 @@
+[package]
+name = "ssh-key-sign"
+version = "0.1.0"
+authors = ["Bodo Junglas <junglas@objectcode.de>"]
+edition = "2018"
+
+[dependencies]
+ring = "0.13"
+untrusted = "0.6"
+base64 = "0.10"
+byteorder = "1"
+
+[dev-dependencies]
+spectral = "0.6"
+tempfile = "3"
