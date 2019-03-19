@@ -9,7 +9,11 @@ ring = "0.13"
 untrusted = "0.6"
 base64 = "0.10"
 byteorder = "1"
+openssl = { version = "0.10.19", optional = true }
 
 [dev-dependencies]
 spectral = "0.6"
 tempfile = "3"
+
+[features]
+with-private = ["openssl"]

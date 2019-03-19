@@ -87,7 +87,7 @@ where
   pub fn remove_all_identities(&mut self) -> Result<()> {
     let mut msg = MessageBuilder::new();
 
-    msg.write_u8(REQUEST_IDENTITIES);
+    msg.write_u8(REMOVE_ALL_IDENTITIES);
     self.stream.write_all(msg.payload())?;
 
     let response = self.read_response()?;

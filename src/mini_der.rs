@@ -11,7 +11,7 @@ fn length_length(length: usize) -> u8 {
   return num_bytes;
 }
 
-fn block_length(tag: u8, length: usize) -> usize {
+fn block_length(length: usize) -> usize {
   if length >= 128 {
     let n = length_length(length);
     length + 1 + 1 + n as usize
@@ -34,9 +34,9 @@ fn encode_tag(target: &mut Vec<u8>, tag: u8, length: usize) {
 }
 
 pub fn encode_rsa_public(n: &[u8], e: &[u8]) -> Vec<u8> {
-  let n_length = block_length(TAG_INTEGER, n.len());
-  let e_length = block_length(TAG_INTEGER, e.len());
-  let mut der = Vec::with_capacity(block_length(TAG_SEQUENCE, e_length + n_length));
+  let n_length = block_length( n.len());
+  let e_length = block_length( e.len());
+  let mut der = Vec::with_capacity(block_length( e_length + n_length));
 
   encode_tag(&mut der, TAG_SEQUENCE, e_length + n_length);
   encode_tag(&mut der, TAG_INTEGER, n.len());

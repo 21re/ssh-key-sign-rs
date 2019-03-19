@@ -1,7 +1,5 @@
 use crate::encoding::Writer;
-use crate::public::{PublicKey, SSH_ECDSA_P256_KEY_TYPE};
 use byteorder::{BigEndian, ByteOrder};
-use std::net::Shutdown::Write;
 
 pub const FAILURE: u8 = 5;
 pub const SUCCESS: u8 = 6;

@@ -6,10 +6,12 @@ pub enum Error {
   InvalidKeyLength,
   InvalidSignature,
   SignatureDoesNotMatch,
+  KeyIsEncrypted,
   BufferTooShort,
   RequestFailure,
   Base64(String),
   IO(String),
+  OpenSsl(String)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -21,10 +23,12 @@ impl fmt::Display for Error {
       Error::InvalidKeyLength => write!(f, "invalid key length"),
       Error::InvalidSignature => write!(f, "invalid signature"),
       Error::SignatureDoesNotMatch => write!(f, "signature does not match"),
+      Error::KeyIsEncrypted => write!(f, "key is encrypted"),
       Error::BufferTooShort => write!(f, "buffer too short"),
       Error::RequestFailure => write!(f, "request failure"),
       Error::Base64(msg) => write!(f, "invalid base64: {}", msg),
       Error::IO(msg) => write!(f, "I/O error: {}", msg),
+      Error::OpenSsl(msg) => write!(f, "I/O error: {}", msg),
     }
   }
 }
@@ -46,3 +50,11 @@ impl From<std::str::Utf8Error> for Error {
     Error::IO(format!("{}", err))
   }
 }
+
+#[cfg(feature = "with-private")]
+impl From<openssl::error::ErrorStack> for Error {
+  fn from(err: openssl::error::ErrorStack) -> Self {
+    Error::IO(format!("{}", err))
+  }
+}
+
