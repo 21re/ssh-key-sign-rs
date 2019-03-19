@@ -47,3 +47,32 @@ impl<'a> Reader<'a> {
     }
   }
 }
+
+pub struct Writer {
+  pub buffer: Vec<u8>,
+}
+
+impl Writer {
+  pub fn new() -> Writer {
+    let buffer = Vec::with_capacity(256);
+    Writer { buffer }
+  }
+
+  pub fn write_u8(&mut self, b: u8) {
+    self.buffer.push(b);
+  }
+
+  pub fn write_u32(&mut self, i: u32) {
+    let mut bytes = [0u8; 4];
+    BigEndian::write_u32(&mut bytes, i);
+    self.buffer.extend_from_slice(&bytes);
+  }
+
+  pub fn write_string(&mut self, s: &[u8]) {
+    let mut len_bytes = [0u8; 4];
+    BigEndian::write_u32(&mut len_bytes, s.len() as u32);
+    self.buffer.reserve(4 + s.len());
+    self.buffer.extend_from_slice(&len_bytes);
+    self.buffer.extend_from_slice(s);
+  }
+}

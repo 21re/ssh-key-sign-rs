@@ -4,6 +4,8 @@ use std::fmt;
 pub enum Error {
   CouldNotReadKey,
   InvalidKeyLength,
+  InvalidSignature,
+  SignatureDoesNotMatch,
   BufferTooShort,
   RequestFailure,
   Base64(String),
@@ -17,6 +19,8 @@ impl fmt::Display for Error {
     match self {
       Error::CouldNotReadKey => write!(f, "could not read key"),
       Error::InvalidKeyLength => write!(f, "invalid key length"),
+      Error::InvalidSignature => write!(f, "invalid signature"),
+      Error::SignatureDoesNotMatch => write!(f, "signature does not match"),
       Error::BufferTooShort => write!(f, "buffer too short"),
       Error::RequestFailure => write!(f, "request failure"),
       Error::Base64(msg) => write!(f, "invalid base64: {}", msg),
@@ -36,7 +40,6 @@ impl From<std::io::Error> for Error {
     Error::IO(format!("{}", err))
   }
 }
-
 
 impl From<std::str::Utf8Error> for Error {
   fn from(err: std::str::Utf8Error) -> Self {

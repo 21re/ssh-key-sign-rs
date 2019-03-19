@@ -1,15 +1,18 @@
-use crate::agent::msg::{MessageBuilder, IDENTITIES_ANSWER, REMOVE_ALL_IDENTITIES, REQUEST_IDENTITIES, SUCCESS};
+use crate::agent::msg::{
+  MessageBuilder, IDENTITIES_ANSWER, REMOVE_ALL_IDENTITIES, REQUEST_IDENTITIES, SIGN_REQUEST, SIGN_RESPONSE, SUCCESS,
+};
 use crate::encoding::Reader;
 use crate::error::{Error, Result};
+use crate::public::PublicKey;
+use crate::signature::{Signature, SignatureHash};
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
-use crate::public::PublicKey;
 use std::str;
 
 #[derive(Debug)]
 pub struct Identity {
-  key: PublicKey,
-  comment: String,
+  pub key: PublicKey,
+  pub comment: String,
 }
 
 pub struct AgentClient<S> {
@@ -42,13 +45,43 @@ where
     for _ in 0..n {
       let raw_key = reader.read_string()?;
       let raw_comment = reader.read_string()?;
-      let key = PublicKey::parse_rew(raw_key)?;
+      let key = PublicKey::parse_raw(raw_key)?;
       let comment = str::from_utf8(raw_comment)?.to_string();
 
-      identities.push(Identity {key, comment })
+      identities.push(Identity { key, comment })
     }
 
     Ok(identities)
+  }
+
+  pub fn sign_request(&mut self, key: &PublicKey, data: &[u8]) -> Result<Signature> {
+    let mut msg = MessageBuilder::new();
+
+    msg.write_u8(SIGN_REQUEST);
+    msg.write_string(&key.to_ssh_key());
+    msg.write_string(data);
+    match key {
+      PublicKey::Rsa {
+        preferred_hash: SignatureHash::RsaSha256,
+        ..
+      } => msg.write_u32(2),
+      PublicKey::Rsa {
+        preferred_hash: SignatureHash::RsaSha512,
+        ..
+      } => msg.write_u32(4),
+      _ => msg.write_u32(0),
+    }
+    self.stream.write_all(msg.payload())?;
+
+    let response = self.read_response()?;
+    let mut reader = Reader::new(&response);
+
+    if reader.read_u8()? != SIGN_RESPONSE {
+      return Err(Error::RequestFailure);
+    }
+    let raw_signature = reader.read_string()?;
+
+    Signature::parse_raw(raw_signature)
   }
 
   pub fn remove_all_identities(&mut self) -> Result<()> {

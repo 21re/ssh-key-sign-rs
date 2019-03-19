@@ -1,4 +1,7 @@
+use crate::encoding::Writer;
+use crate::public::{PublicKey, SSH_ECDSA_P256_KEY_TYPE};
 use byteorder::{BigEndian, ByteOrder};
+use std::net::Shutdown::Write;
 
 pub const FAILURE: u8 = 5;
 pub const SUCCESS: u8 = 6;
@@ -23,31 +26,31 @@ pub const CONSTRAIN_CONFIRM: u8 = 2;
 pub const CONSTRAIN_EXTENSION: u8 = 3;
 
 pub struct MessageBuilder {
-  buffer: Vec<u8>,
+  writer: Writer,
 }
 
 impl MessageBuilder {
   pub fn new() -> MessageBuilder {
-    let mut buffer = Vec::with_capacity(256);
-    buffer.extend_from_slice(&[0; 4]);
-    MessageBuilder { buffer }
+    let mut writer = Writer::new();
+    writer.write_u32(0);
+    MessageBuilder { writer }
   }
 
   pub fn write_u8(&mut self, b: u8) {
-    self.buffer.push(b);
+    self.writer.write_u8(b);
+  }
+
+  pub fn write_u32(&mut self, i: u32) {
+    self.writer.write_u32(i);
   }
 
   pub fn write_string(&mut self, s: &[u8]) {
-    let mut len_bytes = [0u8; 4];
-    BigEndian::write_u32(&mut len_bytes, s.len() as u32);
-    self.buffer.reserve(4 + s.len());
-    self.buffer.extend_from_slice(&len_bytes);
-    self.buffer.extend_from_slice(s);
+    self.writer.write_string(s)
   }
 
   pub fn payload(&mut self) -> &[u8] {
-    let msg_len = self.buffer.len() as u32 - 4;
-    BigEndian::write_u32(&mut self.buffer, msg_len);
-    &self.buffer
+    let msg_len = self.writer.buffer.len() as u32 - 4;
+    BigEndian::write_u32(&mut self.writer.buffer, msg_len);
+    &self.writer.buffer
   }
 }
