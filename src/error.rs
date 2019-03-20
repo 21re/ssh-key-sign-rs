@@ -54,6 +54,13 @@ impl From<std::str::Utf8Error> for Error {
 #[cfg(feature = "with-private")]
 impl From<openssl::error::ErrorStack> for Error {
   fn from(err: openssl::error::ErrorStack) -> Self {
+    Error::OpenSsl(format!("{}", err))
+  }
+}
+
+#[cfg(feature = "with-private")]
+impl From<hex::FromHexError> for Error {
+  fn from(err: hex::FromHexError) -> Self {
     Error::IO(format!("{}", err))
   }
 }

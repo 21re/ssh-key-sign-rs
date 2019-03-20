@@ -1,6 +1,7 @@
 use crate::encoding::Reader;
 use crate::error::{Error, Result};
 use crate::private::{bcrypt_pbkdf, KeyPair};
+use crate::public::SSH_ED25519;
 use openssl::symm::{Cipher, Crypter, Mode};
 
 const MAGIC: &[u8] = b"openssh-key-v1\0";
@@ -20,7 +21,26 @@ pub fn decode_openssh(secret: &[u8], password: Option<&[u8]>) -> Result<KeyPair>
     reader.read_string()?;
   }
 
-  unimplemented!()
+  // Read all secret keys
+  let secret_ = reader.read_string()?;
+  let secret = decrypt_secret_key(ciphername, kdfname, kdfoptions, password, secret_)?;
+  reader = Reader::new(&secret);
+  let _check0 = reader.read_u32()?;
+  let _check1 = reader.read_u32()?;
+  for _ in 0..nkeys {
+    let key_type = reader.read_string()?;
+    let pubkey = Vec::from(reader.read_string()?);
+    let seckey = Vec::from(reader.read_string()?);
+    let _comment = reader.read_string()?;
+
+    if key_type == SSH_ED25519 {
+      assert_eq!(pubkey, &seckey[32..]);
+      return Ok(KeyPair::Ed25519 { pubkey, seckey });
+    } else {
+      return Err(Error::CouldNotReadKey);
+    }
+  }
+  Err(Error::CouldNotReadKey)
 }
 
 fn decrypt_secret_key(

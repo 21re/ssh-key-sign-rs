@@ -59,11 +59,11 @@ impl Signature {
 
   pub fn verify(&self, key: &PublicKey, data: &[u8]) -> Result<()> {
     let algorithm: &signature::VerificationAlgorithm = match (&self.hash, key) {
-      (SignatureHash::RsaSha1, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA1,
-      (SignatureHash::RsaSha256, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
-      (SignatureHash::RsaSha512, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
-      (SignatureHash::EcdsaP256, k @ PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_ASN1,
-      (SignatureHash::Ed25519, k @ PublicKey::Ed25519(_)) => &signature::ED25519,
+      (SignatureHash::RsaSha1, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA1,
+      (SignatureHash::RsaSha256, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
+      (SignatureHash::RsaSha512, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
+      (SignatureHash::EcdsaP256, PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_ASN1,
+      (SignatureHash::Ed25519, PublicKey::Ed25519(_)) => &signature::ED25519,
       _ => return Err(Error::InvalidSignature),
     };
     let ring_sig = self.to_ring_sig()?;
