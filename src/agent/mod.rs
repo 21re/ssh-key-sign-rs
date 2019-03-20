@@ -3,5 +3,5 @@ mod msg;
 
 pub use client::*;
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests;

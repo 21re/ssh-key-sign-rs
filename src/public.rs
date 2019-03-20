@@ -4,8 +4,8 @@ use crate::mini_der;
 use crate::signature::SignatureHash;
 use ring::signature::ED25519_PUBLIC_KEY_LEN;
 
-const SSH_ED25519: &[u8] = b"ssh-ed25519";
-const SSH_ECDSA_P256: &[u8] = b"ecdsa-sha2-nistp256";
+pub const SSH_ED25519: &[u8] = b"ssh-ed25519";
+pub const SSH_ECDSA_P256: &[u8] = b"ecdsa-sha2-nistp256";
 pub const SSH_ECDSA_P256_KEY_TYPE: &[u8] = b"nistp256";
 pub const SSH_RSA: &[u8] = b"ssh-rsa";
 pub const SSH_RSA_SHA2_256: &[u8] = b"rsa-sha2-256";
@@ -74,7 +74,7 @@ impl PublicKey {
         let q = reader.read_string()?;
 
         if key_type == SSH_ECDSA_P256_KEY_TYPE {
-          Ok(PublicKey::EcdsaP256(Vec::from(key_type)))
+          Ok(PublicKey::EcdsaP256(Vec::from(q)))
         } else {
           Err(Error::CouldNotReadKey)
         }

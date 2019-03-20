@@ -8,6 +8,9 @@ use std::process::{Command, Child, Stdio};
 use std::time;
 use std::thread;
 use tempfile::TempDir;
+use std::os::unix::fs::PermissionsExt;
+use std::fs;
+use rand::RngCore;
 
 struct TestAgent {
   temp_dir: TempDir,
@@ -39,7 +42,11 @@ impl TestAgent {
 
   pub fn add_fixture_key(&self, name: &str) -> Result<()> {
     let cwd = env::current_dir()?;
-    Command::new("/usr/bin/ssh-add").env("SSH_AUTH_SOCK", &self.file_name).arg(cwd.join("fixtures").join(name)).output()?;
+    let path = cwd.join("fixtures").join(name);
+    let mut perms = fs::metadata(&path)?.permissions();
+    perms.set_mode(0o400);
+    fs::set_permissions(&path, perms);
+    Command::new("/usr/bin/ssh-add").env("SSH_AUTH_SOCK", &self.file_name).arg(path).output()?;
     Ok(())
   }
 
@@ -88,9 +95,64 @@ fn test_rsa_signature() {
   assert_that(&identities).has_length(1);
 
   let key = &identities.first().unwrap().key;
-  let signature = client.sign_request(key, b"Bla").unwrap();
+  let mut rng = rand::thread_rng();
 
-  println!("{:?}", signature);
+  for _ in 0..100 {
+    let mut data = [0u8; 64];
+    rng.fill_bytes(&mut data);
 
-  signature.verify(key, b"Bla").unwrap();
+    let signature = client.sign_request(key, &data).unwrap();
+
+    signature.verify(key, &data).unwrap();
+  }
+}
+
+#[test]
+fn test_ed25519_signature() {
+  let test_agent = TestAgent::spawn().unwrap();
+  let socket = UnixStream::connect(&test_agent.file_name).unwrap();
+  let mut client = AgentClient::connect(socket);
+
+  test_agent.add_fixture_key("unencrypted_ed25519").unwrap();
+
+  let identities = client.request_identities().unwrap();
+
+  assert_that(&identities).has_length(1);
+
+  let key = &identities.first().unwrap().key;
+  let mut rng = rand::thread_rng();
+
+  for _ in 0..100 {
+    let mut data = [0u8; 64];
+    rng.fill_bytes(&mut data);
+
+    let signature = client.sign_request(key, &data).unwrap();
+
+    signature.verify(key, &data).unwrap();
+  }
+}
+
+#[test]
+fn test_ecdsa_signature() {
+  let test_agent = TestAgent::spawn().unwrap();
+  let socket = UnixStream::connect(&test_agent.file_name).unwrap();
+  let mut client = AgentClient::connect(socket);
+
+  test_agent.add_fixture_key("unencrypted_ecdsa").unwrap();
+
+  let identities = client.request_identities().unwrap();
+
+  assert_that(&identities).has_length(1);
+
+  let key = &identities.first().unwrap().key;
+  let mut rng = rand::thread_rng();
+
+  for _ in 0..100 {
+    let mut data = [0u8; 64];
+    rng.fill_bytes(&mut data);
+
+    let signature = client.sign_request(key, &data).unwrap();
+
+    signature.verify(key, &data).unwrap();
+  }
 }
