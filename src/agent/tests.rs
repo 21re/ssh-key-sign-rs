@@ -1,18 +1,18 @@
 use crate::agent::client::AgentClient;
+use crate::error::{Error, Result};
+use crate::public::PublicKey;
+use rand::RngCore;
 use spectral::prelude::*;
 use std::env;
-use std::os::unix::net::UnixStream;
-use crate::error::{Result, Error};
-use std::path::PathBuf;
-use std::process::{Command, Child, Stdio};
-use std::time;
-use std::thread;
-use tempfile::TempDir;
-use std::os::unix::fs::PermissionsExt;
 use std::fs;
-use rand::RngCore;
-use crate::public::PublicKey;
 use std::fs::read_to_string;
+use std::os::unix::fs::PermissionsExt;
+use std::os::unix::net::UnixStream;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::thread;
+use std::time;
+use tempfile::TempDir;
 
 struct TestAgent {
   _temp_dir: TempDir,
@@ -25,7 +25,13 @@ impl TestAgent {
     let temp_dir = TempDir::new()?;
     let file_name = temp_dir.path().join("ssh-agent.sock");
 
-    let mut agent = Command::new("/usr/bin/ssh-agent").arg("-a").arg(&file_name).arg("-d").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
+    let mut agent = Command::new("/usr/bin/ssh-agent")
+      .arg("-a")
+      .arg(&file_name)
+      .arg("-d")
+      .stdout(Stdio::null())
+      .stderr(Stdio::null())
+      .spawn()?;
     let start = time::Instant::now();
 
     while !file_name.exists() {
@@ -48,7 +54,10 @@ impl TestAgent {
     let mut perms = fs::metadata(&path)?.permissions();
     perms.set_mode(0o400);
     fs::set_permissions(&path, perms)?;
-    Command::new("/usr/bin/ssh-add").env("SSH_AUTH_SOCK", &self.file_name).arg(path).output()?;
+    Command::new("/usr/bin/ssh-add")
+      .env("SSH_AUTH_SOCK", &self.file_name)
+      .arg(path)
+      .output()?;
     Ok(())
   }
 }

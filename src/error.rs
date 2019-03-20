@@ -11,7 +11,7 @@ pub enum Error {
   RequestFailure,
   Base64(String),
   IO(String),
-  OpenSsl(String)
+  OpenSsl(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -57,4 +57,3 @@ impl From<openssl::error::ErrorStack> for Error {
     Error::IO(format!("{}", err))
   }
 }
-

@@ -34,15 +34,29 @@ fn encode_tag(target: &mut Vec<u8>, tag: u8, length: usize) {
 }
 
 pub fn encode_rsa_public(n: &[u8], e: &[u8]) -> Vec<u8> {
-  let n_length = block_length( n.len());
-  let e_length = block_length( e.len());
-  let mut der = Vec::with_capacity(block_length( e_length + n_length));
+  let n_length = block_length(n.len());
+  let e_length = block_length(e.len());
+  let mut der = Vec::with_capacity(block_length(e_length + n_length));
 
   encode_tag(&mut der, TAG_SEQUENCE, e_length + n_length);
   encode_tag(&mut der, TAG_INTEGER, n.len());
   der.extend_from_slice(n);
   encode_tag(&mut der, TAG_INTEGER, e.len());
   der.extend_from_slice(e);
+
+  der
+}
+
+pub fn encode_ecdsa_sig(r: &[u8], s: &[u8]) -> Vec<u8> {
+  let r_length = block_length(r.len());
+  let s_length = block_length(s.len());
+  let mut der = Vec::with_capacity(block_length(r_length + s_length));
+
+  encode_tag(&mut der, TAG_SEQUENCE, r_length + s_length);
+  encode_tag(&mut der, TAG_INTEGER, r.len());
+  der.extend_from_slice(r);
+  encode_tag(&mut der, TAG_INTEGER, s.len());
+  der.extend_from_slice(s);
 
   der
 }

@@ -1,11 +1,10 @@
-
-mod openssh;
 mod bcrypt_pbkdf;
 mod blowflish;
+mod openssh;
 
 #[derive(Debug)]
 pub enum KeyPair {
-  Rsa
+  Rsa,
 }
 
 #[derive(Debug)]

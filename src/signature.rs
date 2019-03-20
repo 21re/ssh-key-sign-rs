@@ -1,6 +1,7 @@
 use crate::encoding::Reader;
 use crate::error::{Error, Result};
-use crate::public::{PublicKey, SSH_RSA, SSH_RSA_SHA2_256, SSH_RSA_SHA2_512,SSH_ED25519, SSH_ECDSA_P256};
+use crate::mini_der;
+use crate::public::{PublicKey, SSH_ECDSA_P256, SSH_ED25519, SSH_RSA, SSH_RSA_SHA2_256, SSH_RSA_SHA2_512};
 use ring::signature;
 use untrusted::Input;
 
@@ -46,45 +47,23 @@ impl Signature {
   pub fn to_ring_sig(&self) -> Result<Vec<u8>> {
     match self.hash {
       SignatureHash::EcdsaP256 => {
-        let mut sig = Vec::new();
         let mut reader = Reader::new(&self.signature);
         let r = reader.read_string()?;
         let s = reader.read_string()?;
-        let r_start = r.iter().position(|b| *b != 0);
-        let s_start = s.iter().position(|b| *b != 0);
 
-        // For reasons of their own ssh likes to encode r and s with separate length encoding
-        // Also they sometime drop or add leading zeros.
-        // ring is more strict and demands r and s being exactly 32 bytes long
-        if let Some(start) = r_start {
-          for _ in 0..(32 + start - r.len()) {
-            sig.push(0)
-          }
-          sig.extend_from_slice(&r[start..])
-        } else {
-          sig.extend_from_slice(&[0u8;32])
-        }
-        if let Some(start) = s_start {
-          for _ in 0..(32 + start - s.len()) {
-            sig.push(0)
-          }
-          sig.extend_from_slice(&s[start..])
-        } else {
-          sig.extend_from_slice(&[0u8;32])
-        }
-        Ok(sig)
+        Ok(mini_der::encode_ecdsa_sig(r, s))
       }
       _ => Ok(self.signature.clone()),
     }
   }
 
   pub fn verify(&self, key: &PublicKey, data: &[u8]) -> Result<()> {
-    let algorithm : &signature::VerificationAlgorithm = match (&self.hash, key) {
+    let algorithm: &signature::VerificationAlgorithm = match (&self.hash, key) {
       (SignatureHash::RsaSha1, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA1,
       (SignatureHash::RsaSha256, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
       (SignatureHash::RsaSha512, k @ PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
-      (SignatureHash::EcdsaP256, k@PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_FIXED,
-      (SignatureHash::Ed25519, k@PublicKey::Ed25519(_)) => &signature::ED25519,
+      (SignatureHash::EcdsaP256, k @ PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_ASN1,
+      (SignatureHash::Ed25519, k @ PublicKey::Ed25519(_)) => &signature::ED25519,
       _ => return Err(Error::InvalidSignature),
     };
     let ring_sig = self.to_ring_sig()?;
