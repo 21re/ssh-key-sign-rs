@@ -11,9 +11,11 @@ use tempfile::TempDir;
 use std::os::unix::fs::PermissionsExt;
 use std::fs;
 use rand::RngCore;
+use crate::public::PublicKey;
+use std::fs::read_to_string;
 
 struct TestAgent {
-  temp_dir: TempDir,
+  _temp_dir: TempDir,
   pub file_name: PathBuf,
   agent: Child,
 }
@@ -34,7 +36,7 @@ impl TestAgent {
     }
 
     Ok(TestAgent {
-      temp_dir,
+      _temp_dir: temp_dir,
       file_name,
       agent,
     })
@@ -45,13 +47,9 @@ impl TestAgent {
     let path = cwd.join("fixtures").join(name);
     let mut perms = fs::metadata(&path)?.permissions();
     perms.set_mode(0o400);
-    fs::set_permissions(&path, perms);
+    fs::set_permissions(&path, perms)?;
     Command::new("/usr/bin/ssh-add").env("SSH_AUTH_SOCK", &self.file_name).arg(path).output()?;
     Ok(())
-  }
-
-  pub fn agent_path(&self) -> &str {
-    self.file_name.to_str().unwrap()
   }
 }
 
@@ -59,6 +57,14 @@ impl Drop for TestAgent {
   fn drop(&mut self) {
     self.agent.kill().ok();
   }
+}
+
+fn read_pub_key(name: &str) -> Result<PublicKey> {
+  let cwd = env::current_dir()?;
+  let path = cwd.join("fixtures").join(name);
+  let line = fs::read_to_string(path)?;
+
+  PublicKey::parse_pub(&line)
 }
 
 #[test]
@@ -95,6 +101,7 @@ fn test_rsa_signature() {
   assert_that(&identities).has_length(1);
 
   let key = &identities.first().unwrap().key;
+  let ref_key = read_pub_key("unencrypted_rsa.pub").unwrap();
   let mut rng = rand::thread_rng();
 
   for _ in 0..100 {
@@ -104,6 +111,7 @@ fn test_rsa_signature() {
     let signature = client.sign_request(key, &data).unwrap();
 
     signature.verify(key, &data).unwrap();
+    signature.verify(&ref_key, &data).unwrap();
   }
 }
 
@@ -120,6 +128,7 @@ fn test_ed25519_signature() {
   assert_that(&identities).has_length(1);
 
   let key = &identities.first().unwrap().key;
+  let ref_key = read_pub_key("unencrypted_ed25519.pub").unwrap();
   let mut rng = rand::thread_rng();
 
   for _ in 0..100 {
@@ -129,6 +138,7 @@ fn test_ed25519_signature() {
     let signature = client.sign_request(key, &data).unwrap();
 
     signature.verify(key, &data).unwrap();
+    signature.verify(&ref_key, &data).unwrap();
   }
 }
 
@@ -145,6 +155,7 @@ fn test_ecdsa_signature() {
   assert_that(&identities).has_length(1);
 
   let key = &identities.first().unwrap().key;
+  let ref_key = read_pub_key("unencrypted_ecdsa.pub").unwrap();
   let mut rng = rand::thread_rng();
 
   for _ in 0..100 {
@@ -154,5 +165,6 @@ fn test_ecdsa_signature() {
     let signature = client.sign_request(key, &data).unwrap();
 
     signature.verify(key, &data).unwrap();
+    signature.verify(&ref_key, &data).unwrap();
   }
 }

@@ -50,18 +50,27 @@ impl Signature {
         let mut reader = Reader::new(&self.signature);
         let r = reader.read_string()?;
         let s = reader.read_string()?;
+        let r_start = r.iter().position(|b| *b != 0);
+        let s_start = s.iter().position(|b| *b != 0);
 
-        // For reasons of their own ssh likes to encode r and s separately sometime preceding with a 0
+        // For reasons of their own ssh likes to encode r and s with separate length encoding
+        // Also they sometime drop or add leading zeros.
         // ring is more strict and demands r and s being exactly 32 bytes long
-        if r.len() == 33 {
-          sig.extend_from_slice(&r[1..]);
+        if let Some(start) = r_start {
+          for _ in 0..(32 + start - r.len()) {
+            sig.push(0)
+          }
+          sig.extend_from_slice(&r[start..])
         } else {
-          sig.extend_from_slice(&r);
+          sig.extend_from_slice(&[0u8;32])
         }
-        if s.len() == 33 {
-          sig.extend_from_slice(&s[1..]);
+        if let Some(start) = s_start {
+          for _ in 0..(32 + start - s.len()) {
+            sig.push(0)
+          }
+          sig.extend_from_slice(&s[start..])
         } else {
-          sig.extend_from_slice(&s);
+          sig.extend_from_slice(&[0u8;32])
         }
         Ok(sig)
       }
