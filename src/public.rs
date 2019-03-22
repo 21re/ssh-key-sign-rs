@@ -6,7 +6,9 @@ use ring::signature::ED25519_PUBLIC_KEY_LEN;
 
 pub const SSH_ED25519: &[u8] = b"ssh-ed25519";
 pub const SSH_ECDSA_P256: &[u8] = b"ecdsa-sha2-nistp256";
+pub const SSH_ECDSA_P384: &[u8] = b"ecdsa-sha2-nistp384";
 pub const SSH_ECDSA_P256_KEY_TYPE: &[u8] = b"nistp256";
+pub const SSH_ECDSA_P384_KEY_TYPE: &[u8] = b"nistp384";
 pub const SSH_RSA: &[u8] = b"ssh-rsa";
 pub const SSH_RSA_SHA2_256: &[u8] = b"rsa-sha2-256";
 pub const SSH_RSA_SHA2_512: &[u8] = b"rsa-sha2-512";
@@ -15,6 +17,7 @@ pub const SSH_RSA_SHA2_512: &[u8] = b"rsa-sha2-512";
 pub enum PublicKey {
   Ed25519(Vec<u8>),
   EcdsaP256(Vec<u8>),
+  EcdsaP384(Vec<u8>),
   Rsa {
     e: Vec<u8>,
     n: Vec<u8>,
@@ -35,6 +38,7 @@ impl PublicKey {
     match (parts[0].as_bytes(), key) {
       (SSH_ED25519, k @ PublicKey::Ed25519(_)) => Ok(k),
       (SSH_ECDSA_P256, k @ PublicKey::EcdsaP256(_)) => Ok(k),
+      (SSH_ECDSA_P384, k @ PublicKey::EcdsaP384(_)) => Ok(k),
       (SSH_RSA, PublicKey::Rsa { e, n, .. }) => Ok(PublicKey::Rsa {
         n,
         e,
@@ -79,6 +83,16 @@ impl PublicKey {
           Err(Error::CouldNotReadKey)
         }
       }
+      SSH_ECDSA_P384 => {
+        let key_type = reader.read_string()?;
+        let q = reader.read_string()?;
+
+        if key_type == SSH_ECDSA_P384_KEY_TYPE {
+          Ok(PublicKey::EcdsaP384(Vec::from(q)))
+        } else {
+          Err(Error::CouldNotReadKey)
+        }
+      }
       SSH_RSA => {
         let e = Vec::from(reader.read_string()?);
         let n = Vec::from(reader.read_string()?);
@@ -105,6 +119,11 @@ impl PublicKey {
         writer.write_string(SSH_ECDSA_P256_KEY_TYPE);
         writer.write_string(key);
       }
+      PublicKey::EcdsaP384(key) => {
+        writer.write_string(SSH_ECDSA_P384);
+        writer.write_string(SSH_ECDSA_P384_KEY_TYPE);
+        writer.write_string(key);
+      }
       PublicKey::Rsa { e, n, .. } => {
         writer.write_string(SSH_RSA);
         writer.write_string(e);
@@ -118,6 +137,7 @@ impl PublicKey {
     match self {
       PublicKey::Ed25519(key) => key.clone(),
       PublicKey::EcdsaP256(key) => key.clone(),
+      PublicKey::EcdsaP384(key) => key.clone(),
       PublicKey::Rsa { n, e, .. } => mini_der::encode_rsa_public(n, e),
     }
   }
@@ -149,6 +169,15 @@ mod tests {
     let line = read_first_line("fixtures/unencrypted_ecdsa.pub");
     match PublicKey::parse_pub(&line).unwrap() {
       PublicKey::EcdsaP256(der) => (),
+      _ => panic!("Not an ecdsa key"),
+    }
+  }
+
+  #[test]
+  fn read_ecdsa384_pub() {
+    let line = read_first_line("fixtures/unencrypted_ecdsa384.pub");
+    match PublicKey::parse_pub(&line).unwrap() {
+      PublicKey::EcdsaP384(der) => (),
       _ => panic!("Not an ecdsa key"),
     }
   }

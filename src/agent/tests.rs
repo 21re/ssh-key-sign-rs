@@ -84,11 +84,12 @@ fn test_request_identities() {
 
   test_agent.add_fixture_key("unencrypted_rsa").unwrap();
   test_agent.add_fixture_key("unencrypted_ecdsa").unwrap();
+  test_agent.add_fixture_key("unencrypted_ecdsa384").unwrap();
   test_agent.add_fixture_key("unencrypted_ed25519").unwrap();
 
   let mut identities = client.request_identities().unwrap();
 
-  assert_that(&identities).has_length(3);
+  assert_that(&identities).has_length(4);
 
   client.remove_all_identities().unwrap();
 
@@ -165,6 +166,33 @@ fn test_ecdsa_signature() {
 
   let key = &identities.first().unwrap().key;
   let ref_key = read_pub_key("unencrypted_ecdsa.pub").unwrap();
+  let mut rng = rand::thread_rng();
+
+  for _ in 0..100 {
+    let mut data = [0u8; 64];
+    rng.fill_bytes(&mut data);
+
+    let signature = client.sign_request(key, &data).unwrap();
+
+    signature.verify(key, &data).unwrap();
+    signature.verify(&ref_key, &data).unwrap();
+  }
+}
+
+#[test]
+fn test_ecdsa384_signature() {
+  let test_agent = TestAgent::spawn().unwrap();
+  let socket = UnixStream::connect(&test_agent.file_name).unwrap();
+  let mut client = AgentClient::connect(socket);
+
+  test_agent.add_fixture_key("unencrypted_ecdsa384").unwrap();
+
+  let identities = client.request_identities().unwrap();
+
+  assert_that(&identities).has_length(1);
+
+  let key = &identities.first().unwrap().key;
+  let ref_key = read_pub_key("unencrypted_ecdsa384.pub").unwrap();
   let mut rng = rand::thread_rng();
 
   for _ in 0..100 {

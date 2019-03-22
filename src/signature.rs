@@ -1,7 +1,9 @@
 use crate::encoding::Reader;
 use crate::error::{Error, Result};
 use crate::mini_der;
-use crate::public::{PublicKey, SSH_ECDSA_P256, SSH_ED25519, SSH_RSA, SSH_RSA_SHA2_256, SSH_RSA_SHA2_512};
+use crate::public::{
+  PublicKey, SSH_ECDSA_P256, SSH_ECDSA_P384, SSH_ED25519, SSH_RSA, SSH_RSA_SHA2_256, SSH_RSA_SHA2_512,
+};
 use ring::signature;
 use untrusted::Input;
 
@@ -11,6 +13,7 @@ pub enum SignatureHash {
   RsaSha256,
   RsaSha512,
   EcdsaP256,
+  EcdsaP384,
   Ed25519,
 }
 
@@ -21,6 +24,7 @@ impl SignatureHash {
       SSH_RSA_SHA2_256 => Ok(SignatureHash::RsaSha256),
       SSH_RSA_SHA2_512 => Ok(SignatureHash::RsaSha512),
       SSH_ECDSA_P256 => Ok(SignatureHash::EcdsaP256),
+      SSH_ECDSA_P384 => Ok(SignatureHash::EcdsaP384),
       SSH_ED25519 => Ok(SignatureHash::Ed25519),
       _ => Err(Error::InvalidSignature),
     }
@@ -46,7 +50,7 @@ impl Signature {
 
   pub fn to_ring_sig(&self) -> Result<Vec<u8>> {
     match self.hash {
-      SignatureHash::EcdsaP256 => {
+      SignatureHash::EcdsaP256 | SignatureHash::EcdsaP384 => {
         let mut reader = Reader::new(&self.signature);
         let r = reader.read_string()?;
         let s = reader.read_string()?;
@@ -63,6 +67,7 @@ impl Signature {
       (SignatureHash::RsaSha256, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
       (SignatureHash::RsaSha512, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
       (SignatureHash::EcdsaP256, PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_ASN1,
+      (SignatureHash::EcdsaP384, PublicKey::EcdsaP384(_)) => &signature::ECDSA_P384_SHA384_ASN1,
       (SignatureHash::Ed25519, PublicKey::Ed25519(_)) => &signature::ED25519,
       _ => return Err(Error::InvalidSignature),
     };
