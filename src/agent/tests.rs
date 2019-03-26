@@ -1,11 +1,11 @@
 use crate::agent::client::AgentClient;
 use crate::error::{Error, Result};
 use crate::public::PublicKey;
+use crate::signature::Signature;
 use rand::RngCore;
 use spectral::prelude::*;
 use std::env;
 use std::fs;
-use std::fs::read_to_string;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
@@ -119,9 +119,12 @@ fn test_rsa_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
+    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
+    signature2.verify(key, &data).unwrap();
+    signature2.verify(&ref_key, &data).unwrap();
   }
 }
 
@@ -146,9 +149,12 @@ fn test_ed25519_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
+    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
+    signature2.verify(key, &data).unwrap();
+    signature2.verify(&ref_key, &data).unwrap();
   }
 }
 
@@ -173,9 +179,12 @@ fn test_ecdsa_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
+    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
+    signature2.verify(key, &data).unwrap();
+    signature2.verify(&ref_key, &data).unwrap();
   }
 }
 
@@ -200,8 +209,11 @@ fn test_ecdsa384_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
+    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
+    signature2.verify(key, &data).unwrap();
+    signature2.verify(&ref_key, &data).unwrap();
   }
 }
