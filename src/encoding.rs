@@ -12,12 +12,16 @@ impl<'a> Reader<'a> {
   }
 
   #[inline]
-  pub fn remaining(&self) -> usize {
+  pub fn remaining_len(&self) -> usize {
     self.data.len() - self.position
   }
 
+  pub fn remaining(&self) -> &'a [u8] {
+    &self.data[self.position..]
+  }
+
   pub fn read_u8(&mut self) -> Result<u8> {
-    if self.remaining() >= 1 {
+    if self.remaining_len() >= 1 {
       let b = self.data[self.position];
       self.position += 1;
       Ok(b)
@@ -27,7 +31,7 @@ impl<'a> Reader<'a> {
   }
 
   pub fn read_u32(&mut self) -> Result<u32> {
-    if self.remaining() >= 4 {
+    if self.remaining_len() >= 4 {
       let u = BigEndian::read_u32(&self.data[self.position..]);
       self.position += 4;
       Ok(u)
@@ -38,7 +42,7 @@ impl<'a> Reader<'a> {
 
   pub fn read_string(&mut self) -> Result<&'a [u8]> {
     let len = self.read_u32()? as usize;
-    if self.remaining() >= len {
+    if self.remaining_len() >= len {
       let result = &self.data[self.position..(self.position + len)];
       self.position += len;
       Ok(result)

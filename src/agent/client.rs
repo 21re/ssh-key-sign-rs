@@ -80,8 +80,9 @@ where
       return Err(Error::RequestFailure);
     }
     let raw_signature = reader.read_string()?;
+    let (signature, _) = Signature::parse_raw(raw_signature)?;
 
-    Signature::parse_raw(raw_signature)
+    Ok(signature)
   }
 
   pub fn remove_all_identities(&mut self) -> Result<()> {

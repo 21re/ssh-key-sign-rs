@@ -119,7 +119,10 @@ fn test_rsa_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
-    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
+    let sig_raw = signature.to_ssh_sig();
+    let (signature2, remaining) = Signature::parse_raw(&sig_raw).unwrap();
+
+    assert_that(&remaining.is_empty()).is_true();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
@@ -149,7 +152,10 @@ fn test_ed25519_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
-    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
+    let sig_raw = signature.to_ssh_sig();
+    let (signature2, remaining) = Signature::parse_raw(&sig_raw).unwrap();
+
+    assert_that(&remaining.is_empty()).is_true();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
@@ -179,7 +185,10 @@ fn test_ecdsa_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
-    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
+    let sig_raw = signature.to_ssh_sig();
+    let (signature2, remaining) = Signature::parse_raw(&sig_raw).unwrap();
+
+    assert_that(&remaining.is_empty()).is_true();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();
@@ -209,7 +218,10 @@ fn test_ecdsa384_signature() {
     rng.fill_bytes(&mut data);
 
     let signature = client.sign_request(key, &data).unwrap();
-    let signature2 = Signature::parse_raw(&signature.to_ssh_sig()).unwrap();
+    let sig_raw = signature.to_ssh_sig();
+    let (signature2, remaining) = Signature::parse_raw(&sig_raw).unwrap();
+
+    assert_that(&remaining.is_empty()).is_true();
 
     signature.verify(key, &data).unwrap();
     signature.verify(&ref_key, &data).unwrap();

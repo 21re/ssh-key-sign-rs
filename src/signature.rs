@@ -38,14 +38,14 @@ pub struct Signature {
 }
 
 impl Signature {
-  pub fn parse_raw(raw_signature: &[u8]) -> Result<Signature> {
+  pub fn parse_raw(raw_signature: &[u8]) -> Result<(Signature, &[u8])> {
     let mut reader = Reader::new(raw_signature);
 
     let algo = reader.read_string()?;
     let hash = SignatureHash::from_name(algo)?;
     let signature = Vec::from(reader.read_string()?);
 
-    Ok(Signature { hash, signature })
+    Ok((Signature { hash, signature }, reader.remaining()))
   }
 
   pub fn to_ssh_sig(&self) -> Vec<u8> {
