@@ -1,4 +1,4 @@
-use crate::encoding::Reader;
+use crate::encoding::{Reader, Writer};
 use crate::error::{Error, Result};
 use crate::mini_der;
 use crate::public::{
@@ -46,6 +46,23 @@ impl Signature {
     let signature = Vec::from(reader.read_string()?);
 
     Ok(Signature { hash, signature })
+  }
+
+  pub fn to_ssh_sig(&self) -> Vec<u8> {
+    let mut writer = Writer::new();
+
+    match self.hash {
+      SignatureHash::RsaSha1 => writer.write_string(SSH_RSA),
+      SignatureHash::RsaSha256 => writer.write_string(SSH_RSA_SHA2_256),
+      SignatureHash::RsaSha512 => writer.write_string(SSH_RSA_SHA2_512),
+      SignatureHash::EcdsaP256 => writer.write_string(SSH_ECDSA_P256),
+      SignatureHash::EcdsaP384 => writer.write_string(SSH_ECDSA_P384),
+      SignatureHash::Ed25519 => writer.write_string(SSH_ED25519),
+    }
+
+    writer.write_string(&self.signature);
+
+    writer.buffer
   }
 
   pub fn to_ring_sig(&self) -> Result<Vec<u8>> {
