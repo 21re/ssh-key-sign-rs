@@ -79,7 +79,7 @@ impl Signature {
   }
 
   pub fn verify(&self, key: &PublicKey, data: &[u8]) -> Result<()> {
-    let algorithm: &signature::VerificationAlgorithm = match (&self.hash, key) {
+    let algorithm: &dyn signature::VerificationAlgorithm = match (&self.hash, key) {
       (SignatureHash::RsaSha1, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA1,
       (SignatureHash::RsaSha256, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
       (SignatureHash::RsaSha512, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
