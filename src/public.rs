@@ -168,7 +168,7 @@ mod tests {
   fn read_ecdsa_pub() {
     let line = read_first_line("fixtures/unencrypted_ecdsa.pub");
     match PublicKey::parse_pub(&line).unwrap() {
-      PublicKey::EcdsaP256(der) => (),
+      PublicKey::EcdsaP256(_) => (),
       _ => panic!("Not an ecdsa key"),
     }
   }
@@ -177,7 +177,7 @@ mod tests {
   fn read_ecdsa384_pub() {
     let line = read_first_line("fixtures/unencrypted_ecdsa384.pub");
     match PublicKey::parse_pub(&line).unwrap() {
-      PublicKey::EcdsaP384(der) => (),
+      PublicKey::EcdsaP384(_) => (),
       _ => panic!("Not an ecdsa key"),
     }
   }

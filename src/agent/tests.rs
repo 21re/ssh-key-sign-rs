@@ -25,7 +25,7 @@ impl TestAgent {
     let temp_dir = TempDir::new()?;
     let file_name = temp_dir.path().join("ssh-agent.sock");
 
-    let mut agent = Command::new("/usr/bin/ssh-agent")
+    let agent = Command::new("/usr/bin/ssh-agent")
       .arg("-a")
       .arg(&file_name)
       .arg("-d")

@@ -8,7 +8,8 @@ fn length_length(length: usize) -> u8 {
     num_bytes += 1;
     i >>= 8;
   }
-  return num_bytes;
+
+  num_bytes
 }
 
 fn block_length(length: usize) -> usize {
