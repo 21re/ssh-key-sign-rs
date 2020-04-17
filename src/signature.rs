@@ -5,7 +5,6 @@ use crate::public::{
   PublicKey, SSH_ECDSA_P256, SSH_ECDSA_P384, SSH_ED25519, SSH_RSA, SSH_RSA_SHA2_256, SSH_RSA_SHA2_512,
 };
 use ring::signature;
-use untrusted::Input;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SignatureHash {
@@ -80,7 +79,6 @@ impl Signature {
 
   pub fn verify(&self, key: &PublicKey, data: &[u8]) -> Result<()> {
     let algorithm: &dyn signature::VerificationAlgorithm = match (&self.hash, key) {
-      (SignatureHash::RsaSha1, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA1,
       (SignatureHash::RsaSha256, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA256,
       (SignatureHash::RsaSha512, PublicKey::Rsa { .. }) => &signature::RSA_PKCS1_2048_8192_SHA512,
       (SignatureHash::EcdsaP256, PublicKey::EcdsaP256(_)) => &signature::ECDSA_P256_SHA256_ASN1,
@@ -88,13 +86,13 @@ impl Signature {
       (SignatureHash::Ed25519, PublicKey::Ed25519(_)) => &signature::ED25519,
       _ => return Err(Error::InvalidSignature),
     };
+
+    let peer_public_key =
+        signature::UnparsedPublicKey::new(algorithm, key.to_ring_key());
+
     let ring_sig = self.to_ring_sig()?;
-    if signature::verify(
-      algorithm,
-      Input::from(&key.to_ring_key()),
-      Input::from(data),
-      Input::from(&ring_sig),
-    )
+
+    if peer_public_key.verify(data,&ring_sig)
     .is_ok()
     {
       Ok(())
